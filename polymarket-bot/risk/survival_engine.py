@@ -197,11 +197,51 @@ class SurvivalEngine:
 
         return position
 
+    def cleanup_stale_positions(self, max_age_hours: float = 48.0) -> int:
+        """
+        Force-close posisi yang sudah terlalu lama terbuka.
+        Ini safety net untuk mock markets yang tidak punya end_date valid.
+        
+        Dipanggil di awal setiap hari baru (start_new_day).
+        """
+        now = datetime.now(timezone.utc)
+        stale = []
+        
+        for pos in self.active_positions:
+            try:
+                opened_at = datetime.fromisoformat(pos['opened_at'])
+                if opened_at.tzinfo is None:
+                    opened_at = opened_at.replace(tzinfo=timezone.utc)
+                age_hours = (now - opened_at).total_seconds() / 3600
+                if age_hours > max_age_hours:
+                    stale.append(pos)
+            except Exception as e:
+                logger.warning(f"Could not parse opened_at for {pos.get('position_id')}: {e}")
+                stale.append(pos)  # kalau tidak bisa parse, anggap stale
+        
+        if stale:
+            logger.warning(f"Cleaning up {len(stale)} stale positions (>{max_age_hours}h old)")
+            for pos in stale:
+                # Force close sebagai LOSS (konservatif)
+                self.close_position(
+                    position_id=pos['position_id'],
+                    outcome="LOSS",
+                    final_price=0.0
+                )
+                logger.warning(f"  Force-closed: {pos['position_id']} | "
+                              f"Age: {(now - datetime.fromisoformat(pos['opened_at'].replace('Z','+00:00'))).total_seconds()/3600:.1f}h")
+        
+        return len(stale)
+
     def start_new_day(self) -> None:
         """
         Start a new trading day.
         Reset daily target. Log the previous day to log.json.
         """
+        stale_count = self.cleanup_stale_positions(max_age_hours=48)
+        if stale_count > 0:
+            logger.info(f"Day start: force-closed {stale_count} stale positions")
+
         # Log previous day
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         day_log = {

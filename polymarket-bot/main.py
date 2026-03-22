@@ -124,6 +124,11 @@ def run_mode_once():
     logger.info("Running single analysis cycle...")
 
     survival = SurvivalEngine()
+
+    stale = survival.cleanup_stale_positions(max_age_hours=24)
+    if stale > 0:
+        logger.info(f"Startup cleanup: removed {stale} ghost positions")
+
     _display_status(survival)
 
     if survival.check_death():
@@ -187,6 +192,10 @@ def run_mode_trading(mode: str):
     # Initialize
     survival = SurvivalEngine()
     paper_trader = PaperTrader(survival)
+
+    stale = survival.cleanup_stale_positions(max_age_hours=24)
+    if stale > 0:
+        logger.info(f"Startup cleanup: removed {stale} ghost positions")
 
     # Set up signal handler for graceful shutdown
     signal.signal(signal.SIGINT, _signal_handler)
@@ -260,6 +269,15 @@ def run_mode_trading(mode: str):
             # Run decision engine
             decisions = run_analysis_cycle(markets, survival)
 
+            # Resolve expiring positions (paper mode) first to free up balance
+            if not is_live:
+                results = paper_trader.check_and_resolve_expiring(hours_threshold=2.0)
+                for result in results:
+                    if result["outcome"] == "WIN":
+                        alert_position_win(result["pnl"], result["new_balance"])
+                    else:
+                        alert_position_loss(result["pnl"], result["new_balance"])
+
             # Execute BUY signals
             for decision in decisions:
                 if decision["action"] == "BUY":
@@ -276,15 +294,6 @@ def run_mode_trading(mode: str):
                                 decision["confidence"],
                                 decision.get("reasoning", ""),
                             )
-
-            # Check expiring positions (paper mode)
-            if not is_live:
-                results = paper_trader.check_and_resolve_expiring(hours_threshold=2.0)
-                for result in results:
-                    if result["outcome"] == "WIN":
-                        alert_position_win(result["pnl"], result["new_balance"])
-                    else:
-                        alert_position_loss(result["pnl"], result["new_balance"])
 
             # Display status
             _display_status(survival)
