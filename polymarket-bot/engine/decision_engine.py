@@ -109,9 +109,7 @@ def evaluate_market(
     market_id = market.get("condition_id", "")
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    logger.info(f"\n{'='*60}")
-    logger.info(f"Evaluating: {question[:70]}")
-    logger.info(f"{'='*60}")
+    logger.info(f"\n[EVALUATING] {question[:100]}")
 
     # ========== STEP 0 — Base Rate ==========
     category = base_rate.classify_market(question)
@@ -169,15 +167,17 @@ def evaluate_market(
         market_price=trade_price,
         bankroll=survival.balance,
         confidence=confidence,
+        news_count=len(relevant_news),
     )
 
     bet_size = sizing.get("bet_size", 0)
-    logger.info(f"Step 4 | Bet size: ${bet_size:.2f}")
 
     if bet_size <= 0:
         reason = sizing.get("reason", "Kelly returned zero bet")
-        logger.info(f"Step 4 | {reason} → SKIP")
+        logger.info(f"Step 4 | Bet size: $0.00 ({reason}) → SKIP")
         return _skip_decision(market_id, question, reason, now_iso)
+        
+    logger.info(f"Step 4 | Bet size: ${bet_size:.2f}")
 
     # ========== STEP 5 — Pre-execution Checklist ==========
     hours_to_resolution = _calculate_hours_to_resolution(end_date)
@@ -264,9 +264,7 @@ def run_analysis_cycle(
     Returns:
         List of all decisions (BUY and SKIP).
     """
-    logger.info(f"\n{'#'*60}")
-    logger.info(f"Starting analysis cycle: {len(markets)} markets")
-    logger.info(f"{'#'*60}")
+    logger.info(f"\n=== Starting analysis cycle: {len(markets)} markets ===")
 
     # Pre-fetch news once for all markets
     news_articles = get_recent_news(hours=6)

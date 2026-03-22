@@ -16,13 +16,14 @@ def calculate_bet_size(
     bankroll: float,
     confidence: str,
     kelly_fraction: float = 0.5,
+    news_count: int = 0,
 ) -> dict:
     """
     Hitung ukuran bet optimal menggunakan Half-Kelly Criterion.
 
     Uncertainty multiplier berdasarkan confidence:
     - HIGH:   1.0  (pakai full Half-Kelly)
-    - MEDIUM: 0.5  (pakai Quarter-Kelly)
+    - MEDIUM: 0.5  (pakai Quarter-Kelly) - dikurangi 50% lagi jika news_count < 2
     - LOW:    0.0  (SKIP, jangan bet)
 
     Hard limits yang tidak boleh dilanggar:
@@ -36,6 +37,7 @@ def calculate_bet_size(
         bankroll:       Current total bankroll in USDC.
         confidence:     "LOW", "MEDIUM", or "HIGH" from AI.
         kelly_fraction: Kelly fraction to use (default 0.5 = Half-Kelly).
+        news_count:     Number of relevant news articles found for this market.
 
     Returns:
         Dict with bet_size, kelly_full_pct, kelly_applied_pct, bankroll_pct, reason.
@@ -74,6 +76,12 @@ def calculate_bet_size(
 
     # Apply uncertainty multiplier
     uncertainty_multiplier = {"HIGH": 1.0, "MEDIUM": 0.5}.get(confidence, 0)
+    
+    # PENALTY: Trades with MEDIUM confidence and VERY LOW news count (e.g., < 2)
+    if confidence == "MEDIUM" and news_count < 2:
+        logger.info(f"Penalizing Kelly for MEDIUM confidence but low news count ({news_count})")
+        uncertainty_multiplier *= 0.5  # Reduce by half again (so 0.25 total multiplier)
+
     kelly_adjusted *= uncertainty_multiplier
 
     # Calculate raw bet size

@@ -44,37 +44,37 @@ BASE_RATES = {
 # Keyword mapping for classification
 _KEYWORD_MAP = {
     # Politik
-    "politics_incumbent_win":       ["incumbent", "reelect", "re-elect", "sitting president"],
-    "politics_challenger_win":      ["challenger", "opposition", "defeat incumbent"],
-    "politics_primary_frontrunner": ["primary", "frontrunner", "nomination", "nominee"],
-    "politics_impeachment":         ["impeach", "impeachment", "removal from office"],
+    "politics_incumbent_win":       ["incumbent", "reelect", "re-elect", "sitting president", "second term"],
+    "politics_challenger_win":      ["challenger", "opposition", "defeat incumbent", "new president"],
+    "politics_primary_frontrunner": ["primary", "frontrunner", "nomination", "nominee", "delegate", "caucus"],
+    "politics_impeachment":         ["impeach", "impeachment", "removal from office", "convict", "resign"],
 
     # Ekonomi / Fed
-    "fed_rate_cut":                 ["rate cut", "lower rate", "fed cut", "dovish"],
-    "fed_rate_hike":                ["rate hike", "raise rate", "fed hike", "hawkish", "tighten"],
-    "fed_rate_hold":                ["hold rate", "pause rate", "fed hold", "unchanged rate"],
+    "fed_rate_cut":                 ["rate cut", "lower rate", "fed cut", "dovish", "cut rates", "decrease rate"],
+    "fed_rate_hike":                ["rate hike", "raise rate", "fed hike", "hawkish", "tighten", "increase rate"],
+    "fed_rate_hold":                ["hold rate", "pause rate", "fed hold", "unchanged rate", "maintain rate"],
     "economic_beat_consensus":      ["beat expectation", "beat consensus", "better than expected",
-                                     "gdp beat", "jobs beat", "employment beat"],
+                                     "gdp beat", "jobs beat", "employment beat", "cpi drop", "inflation drop"],
     "economic_miss_consensus":      ["miss expectation", "miss consensus", "worse than expected",
-                                     "gdp miss", "jobs miss", "disappointing"],
+                                     "gdp miss", "jobs miss", "disappointing", "cpi rise", "inflation rise"],
 
     # Geopolitik
     "ceasefire_after_negotiation":  ["ceasefire", "peace deal", "peace agreement", "truce",
-                                     "negotiation", "peace talk"],
+                                     "negotiation", "peace talk", "treaty"],
     "ceasefire_broken":             ["ceasefire broken", "ceasefire violated", "truce broken",
-                                     "attack resume"],
-    "sanctions_implemented":        ["sanction", "embargo", "trade restriction", "tariff"],
+                                     "attack resume", "escalate", "conflict resume"],
+    "sanctions_implemented":        ["sanction", "embargo", "trade restriction", "tariff", "blockade"],
 
     # Crypto
     "btc_breakout_up":              ["btc", "bitcoin", "breakout", "rally", "surge", "100k",
-                                     "all time high", "ath", "bull"],
+                                     "all time high", "ath", "bull", "moon"],
     "btc_breakdown_down":           ["bitcoin crash", "btc crash", "crypto crash", "bear",
-                                     "bitcoin drop", "btc drop"],
-    "btc_stays_range":              ["bitcoin range", "btc consolidat", "sideways"],
+                                     "bitcoin drop", "btc drop", "plummet", "dump"],
+    "btc_stays_range":              ["bitcoin range", "btc consolidat", "sideways", "stagnate"],
     "crypto_regulation_strict":     ["crypto ban", "sec crackdown", "crypto regulation strict",
-                                     "sec enforcement", "crypto restrict"],
+                                     "sec enforcement", "crypto restrict", "wells notice", "sue"],
     "crypto_regulation_lenient":    ["crypto friendly", "pro crypto", "crypto regulation lenient",
-                                     "crypto adopt", "bitcoin etf approv"],
+                                     "crypto adopt", "bitcoin etf approv", "ethereum etf approv", "deregulate"],
 }
 
 
