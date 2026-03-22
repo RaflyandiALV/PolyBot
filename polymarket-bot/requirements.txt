@@ -1,0 +1,6 @@
+requests==2.31.0
+feedparser==6.0.10
+python-dotenv==1.0.0
+schedule==1.2.0
+google-generativeai==0.8.3
+py-clob-client==0.14.0
