@@ -26,6 +26,7 @@ _CLOB_BASE_URL = "https://clob.polymarket.com"
 # Filters
 _MIN_VOLUME = 10_000
 _MAX_DAYS_TO_RESOLUTION = 7
+_MAX_PAGES = 20
 
 
 def _load_existing_markets() -> List[Dict]:
@@ -44,6 +45,37 @@ def _save_markets(markets: List[Dict]) -> None:
     _MARKETS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(_MARKETS_FILE, "w", encoding="utf-8") as f:
         json.dump(markets, f, indent=2, ensure_ascii=False)
+
+
+def parse_end_date(market: dict) -> datetime | None:
+    """
+    Parse end_date dari berbagai format yang Polymarket kirim.
+    Return None kalau tidak bisa parse.
+    """
+    for field in ['end_date_iso', 'endDateIso', 'end_date', 'endDate']:
+        val = market.get(field)
+        if val:
+            try:
+                if isinstance(val, (int, float)):
+                    return datetime.fromtimestamp(float(val), tz=timezone.utc)
+                dt = datetime.fromisoformat(str(val).replace('Z', '+00:00'))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt
+            except Exception:
+                continue
+    return None
+
+def parse_volume(market: dict) -> float:
+    """Parse volume dari berbagai field."""
+    for field in ['volume', 'volume_24hr', 'volumeNum', 'volume_num']:
+        val = market.get(field)
+        if val is not None:
+            try:
+                return float(val)
+            except Exception:
+                continue
+    return 0.0
 
 
 def _parse_float(value, default: float = 0.0) -> float:
@@ -107,6 +139,17 @@ def collect_markets() -> List[Dict]:
                 logger.warning(f"Unexpected response format: {type(data)}")
                 break
 
+            if markets_data and page == 0:
+                sample = markets_data[0]
+                logger.debug(f"Sample market keys: {list(sample.keys())}")
+                logger.debug(f"Sample end_date fields: "
+                             f"end_date_iso={sample.get('end_date_iso')} | "
+                             f"endDateIso={sample.get('endDateIso')} | "
+                             f"end_date={sample.get('end_date')}")
+                logger.debug(f"Sample volume fields: "
+                             f"volume={sample.get('volume')} | "
+                             f"volumeNum={sample.get('volumeNum')}")
+
             for market in markets_data:
                 try:
                     # Check active status
@@ -114,24 +157,11 @@ def collect_markets() -> List[Dict]:
                         continue
 
                     # Parse end date
-                    end_date_str = market.get("end_date_iso", market.get("end_date", ""))
-                    if not end_date_str:
+                    end_date = parse_end_date(market)
+                    if not end_date:
                         continue
 
-                    try:
-                        # Handle various date formats
-                        if "T" in str(end_date_str):
-                            end_date = datetime.fromisoformat(
-                                str(end_date_str).replace("Z", "+00:00")
-                            )
-                        else:
-                            end_date = datetime.strptime(
-                                str(end_date_str), "%Y-%m-%d"
-                            ).replace(tzinfo=timezone.utc)
-                    except (ValueError, TypeError):
-                        continue
-
-                    # Filter: must resolve within 7 days
+                    # Filter: must resolve within MAX_DAYS
                     if end_date > max_end_date:
                         continue
 
@@ -140,7 +170,7 @@ def collect_markets() -> List[Dict]:
                         continue
 
                     # Parse volume
-                    volume = _parse_float(market.get("volume", 0))
+                    volume = parse_volume(market)
                     if volume < _MIN_VOLUME:
                         continue
 
@@ -189,8 +219,8 @@ def collect_markets() -> List[Dict]:
             if not next_cursor or not markets_data:
                 break
 
-            # Safety limit: don't fetch more than 10 pages
-            if page >= 10:
+            # Safety limit: don't fetch more than MAX_PAGES
+            if page >= _MAX_PAGES:
                 logger.info("Reached page limit, stopping pagination")
                 break
 
